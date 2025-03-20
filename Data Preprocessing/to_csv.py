@@ -14,7 +14,7 @@ HARMLESS_EXTENTION = '.exeh'
 
 
 def init_table():
-    return pd.DataFrame(columns=['Name', 'SizeOfCode', 'SizeOfInitializedData', 'SizeOfImage', 'Subsystem', 'EntropyAndSections', 'ImportetDLLS', 'Label'])
+    return pd.DataFrame(columns=['Name', 'SizeOfCode', 'SizeOfInitializedData', 'SizeOfImage', 'Subsystem', 'EntropyAndSections', 'ImportedDLLS', 'Label'])
 
 def add_row(df, path):
     pe = pefile.PE(path)
@@ -25,7 +25,7 @@ def add_row(df, path):
     size_of_image               =   efe.get_SizeOfImage(pe)
     subsystem                   =   efe.get_Subsystem(pe)
     entropes_and_sections       =   efe.get_EntropyCalculation_and_sections(pe)
-    importet_dlls               =   efe.get_Importet_DLLs(pe)
+    imported_dlls               =   efe.get_Imported_DLLs(pe)
 
     label = None
 
@@ -37,7 +37,7 @@ def add_row(df, path):
         print(f"Unknown file type: {path}")
         label = "unknown"
 
-    df.loc[len(df)] = [name, size_of_code, size_of_initialized_data, size_of_image, subsystem, entropes_and_sections, importet_dlls, label]
+    df.loc[len(df)] = [name, size_of_code, size_of_initialized_data, size_of_image, subsystem, entropes_and_sections, imported_dlls, label]
 
 def extract_files(df, folder_path):
     files_to_process = []
@@ -52,13 +52,14 @@ def extract_files(df, folder_path):
     return df
 
 if __name__ == '__main__':
-
     root = tk.Tk()
     root.withdraw()
 
     folder_path = filedialog.askdirectory(title="Select Folder")
 
-    print(f"Selected folder: {folder_path}")
+    if not folder_path:
+        print("No file selected. Exiting.")
+        exit()
 
     df = init_table()
 

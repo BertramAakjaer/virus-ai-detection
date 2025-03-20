@@ -54,7 +54,7 @@ def get_EntropyCalculation_and_sections(pe):
         
     return entropy_dict
 
-def get_Importet_DLLs(pe):
+def get_Imported_DLLs(pe):
     imported_dlls = {}
     if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
         for entry in pe.DIRECTORY_ENTRY_IMPORT:
