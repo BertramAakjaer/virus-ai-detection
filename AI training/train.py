@@ -8,34 +8,33 @@ from scipy.sparse import hstack
 
 # Create a DataFrame
 data = pd.DataFrame({
-    'Numerical Feature': [10, 5, 15],
-    'Dictionaries': [
-        [{"WSOCK32.dll": ["bind", "listen"]}, {"API": ["CreateProcess", "ReadFile"]}],
-        [{"KERNEL32.dll": ["read", "write"]}],
-        [{"USER32.dll": ["message", "input"]}, {"API": ["SendMessage"]}]
+    'Num Feature 1': [10, 5, 15],
+    'Num Feature 2': [20, 15, 25],
+    'Num Feature 3': [30, 25, 35],
+    'Num Feature 4': [40, 35, 45],
+    'Dictionary': [
+        {"WSOCK32.dll": ["bind", "listen"], "API": ["CreateProcess", "ReadFile"]},
+        {"KERNEL32.dll": ["read", "write"]},
+        {"USER32.dll": ["message", "input"], "API": ["SendMessage"]}
     ],
     'Label': ['Malicious', 'Benign', 'Benign']
 })
 
 # Preprocess numerical features
-X_num = data[['Numerical Feature']]
+X_num = data[['Num Feature 1', 'Num Feature 2', 'Num Feature 3', 'Num Feature 4']]
 scaler = StandardScaler()
 X_num_scaled = scaler.fit_transform(X_num)
 
-# Preprocess dictionaries
-vectorizers = [CountVectorizer() for _ in range(data['Dictionaries'].apply(len).max())]
+# Preprocess dictionary features
+# Flatten the dictionary values into a single list of strings
+dict_values = data['Dictionary'].apply(lambda x: ' '.join(sum(x.values(), [])))
 
-# Vectorize each dictionary separately
-X_dict_vectorized_list = []
-for i in range(len(vectorizers)):
-    dict_values = data['Dictionaries'].apply(
-        lambda x: ' '.join(sum(x[i].values(), [])) if i < len(x) else ''
-    )
-    X_dict_vectorized = vectorizers[i].fit_transform(dict_values)
-    X_dict_vectorized_list.append(X_dict_vectorized)
+# Vectorize the dictionary values
+vectorizer = CountVectorizer()
+X_dict_vectorized = vectorizer.fit_transform(dict_values)
 
 # Combine numerical and dictionary features
-X_combined = hstack([X_num_scaled] + X_dict_vectorized_list)
+X_combined = hstack([X_num_scaled, X_dict_vectorized])
 
 # Target variable
 y = data['Label']
