@@ -149,8 +149,6 @@ if __name__ == "__main__":
 
 
 
-
-
     input = input("Save the model? (y/n): ")
     if input.lower() != 'y':
         print("Model not saved.")
