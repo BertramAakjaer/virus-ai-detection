@@ -1,4 +1,4 @@
-import pefile, math
+import math
 
 def get_SizeOfCode(pe):
     if hasattr(pe, 'OPTIONAL_HEADER'):
@@ -24,30 +24,35 @@ def get_Subsystem(pe):
     print("No Subsystem found")
     return None
 
-def get_section_names(pe):
-    section_names = []
-    for section in pe.sections:
-        section_names.append(section.Name.decode().strip())
-    
-    if len(section_names) == 0:
-        print("No sections found")
-        return None
-        
-    return section_names
+def get_EntropyCalculation_and_sections(pe):
+    entropy_dict = {}
 
-def get_EntropyCalculation(pe):
-    entropy_list = []
     for section in pe.sections:
         data = section.get_data()
-        if data:
-            entropy = -sum((b/len(data)) * math.log2(b/len(data)) for b in data if b > 0) 
-            entropy_list.append(entropy)
+
+        if not data:
+            continue
+
+        byte_counts = [0] * 256
+
+        for byte in data:
+            byte_counts[byte] += 1
+
+        entropy = 0
+
+        for count in byte_counts:
+            if count:
+                p_x = count / len(data)
+                entropy -= p_x * math.log2(p_x)
+
+        entropy_dict[section.Name.decode().strip()] = entropy
     
-    if len(entropy_list) == 0:
+    
+    if len(entropy_dict) == 0:
         print("No entropy found")
         return None
         
-    return entropy_list
+    return entropy_dict
 
 def get_Importet_DLLs(pe):
     imported_dlls = {}
