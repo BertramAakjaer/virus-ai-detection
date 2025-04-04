@@ -17,7 +17,14 @@ def init_table():
     return pd.DataFrame(columns=['Name', 'SizeOfCode', 'SizeOfInitializedData', 'SizeOfImage', 'Subsystem', 'EntropyAndSections', 'ImportedDLLS', 'Label'])
 
 def add_row(df, path):
-    pe = pefile.PE(path)
+    if not os.path.exists(path):
+        print(f"File not found: {path}")
+        return
+    try: 
+        pe = pefile.PE(path)
+    except Exception as e:
+        print(f"Error reading file {path}: {e}")
+        return
 
     name                        =   os.path.basename(path)
     size_of_code                =   efe.get_SizeOfCode(pe)

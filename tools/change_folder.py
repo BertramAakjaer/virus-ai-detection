@@ -2,6 +2,8 @@ import os
 import tkinter as tk
 from tkinter import filedialog
 
+EXTENTION = '.exeh'
+
 def change_file_extensions(folder_path):
     try:
         # Iterate through all files in the folder
@@ -13,7 +15,7 @@ def change_file_extensions(folder_path):
                 # Split the file name and extension
                 base_name, _ = os.path.splitext(filename)
                 # Create the new file name with .exeh extension
-                new_file_path = os.path.join(folder_path, base_name + '.exeh')
+                new_file_path = os.path.join(folder_path, base_name + EXTENTION)
                 # Rename the file
                 os.rename(file_path, new_file_path)
                 print(f"Renamed: {file_path} -> {new_file_path}")
