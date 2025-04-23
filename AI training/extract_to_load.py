@@ -1,36 +1,31 @@
 import math
 import pefile
 
-def get_SizeOfCode(path):
-    pe = pefile.PE(path)
+def get_SizeOfCode(pe):
     if hasattr(pe, 'OPTIONAL_HEADER'):
         return pe.OPTIONAL_HEADER.SizeOfCode
     print("No SizeOfCode found")
     return None
 
-def get_SizeOfInitializedData(path):
-    pe = pefile.PE(path)
+def get_SizeOfInitializedData(pe):
     if hasattr(pe, 'OPTIONAL_HEADER'):
         return pe.OPTIONAL_HEADER.SizeOfInitializedData
     print("No SizeOfInitializedData found")
     return None
 
-def get_SizeOfImage(path):
-    pe = pefile.PE(path)
+def get_SizeOfImage(pe):
     if hasattr(pe, 'OPTIONAL_HEADER'):
         return pe.OPTIONAL_HEADER.SizeOfImage
     print("No SizeOfImage found")
     return None
 
-def get_Subsystem(path):
-    pe = pefile.PE(path)
+def get_Subsystem(pe):
     if hasattr(pe, 'OPTIONAL_HEADER'):
         return pe.OPTIONAL_HEADER.Subsystem
     print("No Subsystem found")
     return None
 
-def get_EntropyCalculation_and_sections(path):
-    pe = pefile.PE(path)
+def get_EntropyCalculation_and_sections(pe):
     entropy_dict = {}
 
     for section in pe.sections:
@@ -53,15 +48,13 @@ def get_EntropyCalculation_and_sections(path):
 
         entropy_dict[section.Name.decode().strip()] = entropy
     
-    
     if len(entropy_dict) == 0:
         print("No entropy found")
         return None
         
     return entropy_dict
 
-def get_Imported_DLLs(path):
-    pe = pefile.PE(path)
+def get_Imported_DLLs(pe):
     imported_dlls = {}
     if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
         for entry in pe.DIRECTORY_ENTRY_IMPORT:
