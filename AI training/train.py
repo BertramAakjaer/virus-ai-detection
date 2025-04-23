@@ -186,15 +186,15 @@ def train_model_NN(x, y, numeric_features, categorical_features):
 
     param_grid = {
         'classifier__hidden_layer_sizes': [
-            (32,), (64,), (128,), (256,), 
+            (8,), (16,), (32,), (64,), (128,), (256,), 
             (32, 16), (64, 32), (128, 64), (256, 128),
-            (64, 32, 16), (128, 64, 32), (256, 128, 64),
-            (512, 256, 128), (1024, 512, 256),
-            (128, 128, 128), (256, 256, 256), (512, 512, 512)
+            (32, 16, 8), (64, 32, 16), (128, 64, 32), (256, 128, 64),
+            (32, 16, 8, 4), (64, 32, 16, 8)
+
         ],
         'classifier__alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1],
         'classifier__learning_rate_init': [0.0001, 0.001, 0.01, 0.1],
-        'classifier__batch_size': [8, 16, 32, 64, 128, 256],
+        'classifier__batch_size': [4, 8, 16, 32, 64, 128, 256, 500],
         'classifier__learning_rate': ['constant', 'adaptive', 'invscaling'],
     }
 
