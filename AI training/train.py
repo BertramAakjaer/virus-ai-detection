@@ -7,16 +7,17 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 
 from sklearn.model_selection import GridSearchCV, train_test_split
 import joblib
+import numpy as np
 from datetime import datetime
 
 
-TEST_SIZE = 0.4  # Proportion of data to use for testing
-RANDOM_STATE = 69  # Seed for reproducibility
+TEST_SIZE = 0.1  # Proportion of data to use for testing
+RANDOM_STATE = 30  # Seed for reproducibility
 
 
 # Moving the data into correct format for training
@@ -62,7 +63,15 @@ def setup_data(data):
 
     # Prepare input features and target variable
     X = data[numeric_features + categorical_features]
-    y = data['Label']
+    
+    # Convert text labels to binary values (0 for harmless, 1 for malware)
+    y = (data['Label'] == 'malware').astype(int)
+    
+    print("\nLabel distribution:")
+    print(pd.Series(y).value_counts().to_frame(name='count'))
+    print("\nLabel mapping:")
+    print("0 = harmless")
+    print("1 = malware")
 
     # Clean column names
     cleaned_columns = []
@@ -89,7 +98,7 @@ def setup_data(data):
 
 # Training of the model
 
-def train_model(x, y, numeric_features, categorical_features):
+def train_model_SVM(x, y, numeric_features, categorical_features):
     # Create preprocessing steps
     numeric_transformer = StandardScaler()
     categorical_transformer = OneHotEncoder()
@@ -109,9 +118,9 @@ def train_model(x, y, numeric_features, categorical_features):
 
     # Simplify param_grid to remove probability parameter since it must be True
     param_grid = {
-        'classifier__C': [0.1, 1, 10, 100, 1000],
+        'classifier__C': [0.01, 0.03, 0.09, 0.27, 1, 3, 9, 27, 81, 243, 729, 2187, 6561],
         'classifier__kernel': ['rbf'], # 'linear', 'poly', 'sigmoid'],
-        'classifier__degree': [2, 3, 4],
+        'classifier__degree': [1, 2, 3, 4, 6],
         'classifier__shrinking': [True, False],
         'classifier__class_weight': [None, 'balanced'],
         'classifier__gamma': ['scale', 'auto', 0.1]
@@ -137,6 +146,75 @@ def train_model(x, y, numeric_features, categorical_features):
 
     return grid_search.best_estimator_
 
+def train_model_NN(x, y, numeric_features, categorical_features):
+    # Create preprocessing steps
+    numeric_transformer = StandardScaler()
+    categorical_transformer = OneHotEncoder(sparse_output=False)
+
+    # Combine preprocessing steps
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features),
+            ('cat', categorical_transformer, categorical_features)
+        ],
+        remainder='drop'
+    )
+
+    # Define the pipeline with binary classification specifics
+    pipeline = Pipeline([
+        ('preprocessor', preprocessor),
+        ('classifier', MLPClassifier(
+            random_state=RANDOM_STATE,
+            max_iter=10000,
+            validation_fraction=0.1,
+            solver='adam'  # Better for binary classification
+        ))
+    ])
+
+    # Ensure binary classification labels
+    x = x.astype(np.float32)
+    y = y.astype(np.int32)
+    
+    # Verify unique classes
+    unique_classes = np.unique(y)
+    print(f"Unique classes in dataset: {unique_classes}")
+    
+    if len(unique_classes) != 2:
+        raise ValueError(f"Expected binary classification (2 classes), but got {len(unique_classes)} classes")
+
+    param_grid = {
+        'classifier__hidden_layer_sizes': [
+            (50,), (100,), (200,), 
+            (50, 25), (100, 50), (200, 100),
+            (100, 50, 25), (200, 100, 50),
+            (300, 150, 75), (400, 200, 100)
+        ],
+        'classifier__alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1],
+        'classifier__learning_rate_init': [0.0001, 0.001, 0.01, 0.1],
+        'classifier__activation': ['relu', 'tanh'],
+        'classifier__batch_size': [32, 64, 128, 256],
+        'classifier__learning_rate': ['constant', 'adaptive'],
+        'classifier__early_stopping': [True, False]
+    }
+
+    # Create GridSearchCV object
+    grid_search = GridSearchCV(
+        pipeline,
+        param_grid,
+        cv=5,
+        scoring='accuracy',
+        n_jobs=-1,
+        verbose=10,
+        error_score='raise'
+    )
+
+    print("Starting grid search...")
+    grid_search.fit(x, y)
+    print("\nBest parameters:", grid_search.best_params_)
+    print("Best cross-validation score:", grid_search.best_score_)
+    return grid_search.best_estimator_
+    
+    
 
 # Evaultation of model
 
@@ -202,7 +280,7 @@ if __name__ == "__main__":
     print(f"Number of samples: {len(x)}")
 
     print("Training model... \n")
-    model = train_model(x_train, y_train, numeric_features, categorical_features)
+    model = train_model_NN(x_train, y_train, numeric_features, categorical_features)
     
 
     print("Model trained. Evaluating...")

@@ -83,7 +83,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.withdraw()  # Hide the root window
     #model_dir = filedialog.askdirectory(title="Select Model Directory")
-    model_dir = r"C:\Users\bertr\OneDrive - NEXT Uddannelse København\Skrivebord\virus-ai-detection\AI training\trained_models(2025-04-23 10-38-30)"
+    model_dir = r"C:\Users\bertr\OneDrive - NEXT Uddannelse København\Skrivebord\virus-ai-detection\AI training\trained_models(2025-04-23 11-53-40)"
     if not model_dir:
         print("No directory selected. Exiting.")
         exit(1)
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     model, columns = load_model(model_dir)
     
     # Load new data
-    data_path = filedialog.askopenfilename(title="Select Exe File", filetypes=[("Executable mby virus", "*.*")])
+    data_path = filedialog.askopenfilename(title="Select Exe File", filetypes=[("Executable files", "*.exe;*.exev;*.exeh;*.exet")])
     
     if not data_path:
         print("No file selected. Exiting.")
@@ -124,10 +124,12 @@ if __name__ == "__main__":
 
     scores = model.decision_function(data_from_file.iloc[0:1])
     probability = [[1 / (1 + np.exp(-x)) for x in scores]]
-
-    print(prediction)
-    print(probability)
     
-    print("\nPrediction:", "Malware" if prediction[0] == "malware" else "Clean")
-    #print(f"Confidence: {max(probability[0])*100:.2f}%")
+    prob_procent = 100 * probability[0][0]
 
+    # print(prediction)
+    # print(probability)
+    print("\n")
+    
+    print("\nPrediction:", "Malware" if prediction[0] == 0 else "Clean")
+    print("Probability: {:.2f} %".format(prob_procent if prediction[0] == "malware" else 100 - prob_procent))
