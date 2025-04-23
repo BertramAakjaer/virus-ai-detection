@@ -1,0 +1,7 @@
+pandas
+tqdm
+pefile
+numpy
+scikit-learn
+joblib
+tk

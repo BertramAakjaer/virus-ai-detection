@@ -16,8 +16,8 @@ import numpy as np
 from datetime import datetime
 
 
-TEST_SIZE = 0.1  # Proportion of data to use for testing
-RANDOM_STATE = 30  # Seed for reproducibility
+TEST_SIZE = 0.01  # Proportion of data to use for testing
+RANDOM_STATE = 60  # Seed for reproducibility
 
 
 # Moving the data into correct format for training
@@ -167,7 +167,9 @@ def train_model_NN(x, y, numeric_features, categorical_features):
             random_state=RANDOM_STATE,
             max_iter=10000,
             validation_fraction=0.1,
-            solver='adam'  # Better for binary classification
+            solver='adam',  # Better for binary classification
+            early_stopping=True,
+            activation='relu',
         ))
     ])
 
@@ -184,17 +186,16 @@ def train_model_NN(x, y, numeric_features, categorical_features):
 
     param_grid = {
         'classifier__hidden_layer_sizes': [
-            (50,), (100,), (200,), 
-            (50, 25), (100, 50), (200, 100),
-            (100, 50, 25), (200, 100, 50),
-            (300, 150, 75), (400, 200, 100)
+            (32,), (64,), (128,), (256,), 
+            (32, 16), (64, 32), (128, 64), (256, 128),
+            (64, 32, 16), (128, 64, 32), (256, 128, 64),
+            (512, 256, 128), (1024, 512, 256),
+            (128, 128, 128), (256, 256, 256), (512, 512, 512)
         ],
         'classifier__alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1],
         'classifier__learning_rate_init': [0.0001, 0.001, 0.01, 0.1],
-        'classifier__activation': ['relu', 'tanh'],
-        'classifier__batch_size': [32, 64, 128, 256],
-        'classifier__learning_rate': ['constant', 'adaptive'],
-        'classifier__early_stopping': [True, False]
+        'classifier__batch_size': [8, 16, 32, 64, 128, 256],
+        'classifier__learning_rate': ['constant', 'adaptive', 'invscaling'],
     }
 
     # Create GridSearchCV object
