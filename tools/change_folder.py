@@ -2,7 +2,7 @@ import os
 import tkinter as tk
 from tkinter import filedialog
 
-EXTENTION = '.exeh'
+EXTENTION = '.exev'
 
 def change_file_extensions(folder_path):
     try:
