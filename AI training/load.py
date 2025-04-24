@@ -87,7 +87,7 @@ if __name__ == "__main__":
     # model_dir = filedialog.askdirectory(title="Select Model Directory")
     
     print("-\t initializing model\t-")
-    model_dir = r"C:\Users\bertr\OneDrive - NEXT Uddannelse København\Skrivebord\virus-ai-detection\AI training\[SVM] trained_models(2025-04-24 09-20-49)"
+    model_dir = r"C:\Users\bertr\Desktop\virus-ai-detection\AI training\[RF] trained_models(2025-04-24 19-26-54)"
     if not model_dir:
         print("No directory selected. Exiting.")
         exit(1)
@@ -115,10 +115,16 @@ if __name__ == "__main__":
     for col, value in active_data.items():
         if col in row_data:
             row_data[col] = value
-            print(f"Column '{col}' found in data: {value}")  # Optional: keep print statement if needed
+            print(f"Column '{col}' found in data: {value}")
 
     # Create DataFrame from the single row dictionary
     data_from_file = pd.DataFrame([row_data], columns=columns)
+    
+    # Convert categorical columns to strings to match training data format
+    categorical_features = ['Subsystem']  # Add other categorical features if any
+    for col in categorical_features:
+        if col in data_from_file.columns:
+            data_from_file[col] = data_from_file[col].astype(str)
     
     # Make prediction using the first row
     prediction = model.predict(data_from_file.iloc[0:1])

@@ -144,15 +144,12 @@ def train_model_SVM(x, y, numeric_features, categorical_features):
     if len(unique_classes) != 2:
         raise ValueError(f"Expected binary classification (2 classes), but got {len(unique_classes)} classes")
 
-    # Enhanced param_grid with more comprehensive search
+    # Simplified param_grid for faster training
     param_grid = {
-        'classifier__C': [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],  # Wider range for regularization
-        'classifier__kernel': ['rbf', 'linear', 'poly', 'sigmoid'],  # Added polynomial and sigmoid kernels
-        'classifier__gamma': ['scale', 'auto'] + [2**i for i in range(-15, 4)],  # More granular gamma values
-        'classifier__degree': [2, 3, 4],  # Polynomial degrees (only affects poly kernel)
-        'classifier__class_weight': ['balanced', None],
-        'classifier__coef0': [0.0, 0.1, 0.5, 1.0],  # Important for polynomial and sigmoid kernels
-        'classifier__shrinking': [True, False]  # Test impact of shrinking heuristic
+        'classifier__C': [0.1, 1.0, 10.0],  # Reduced regularization options
+        'classifier__kernel': ['rbf', 'linear'],  # Most common kernels
+        'classifier__gamma': ['scale', 'auto'],  # Basic gamma options
+        'classifier__class_weight': ['balanced', None]
     }
 
     # Create GridSearchCV object
@@ -304,18 +301,15 @@ def train_model_RF(x, y, numeric_features, categorical_features):
     if len(unique_classes) != 2:
         raise ValueError(f"Expected binary classification (2 classes), but got {len(unique_classes)} classes")
 
-    # Enhanced param_grid with more comprehensive parameter search
+    # Simplified param_grid for faster training
     param_grid = {
-        'classifier__n_estimators': [100, 200, 300, 500, 1000],  # More options for number of trees
-        'classifier__max_depth': [None, 10, 20, 30, 50, 100],  # More granular depth options
-        'classifier__min_samples_split': [2, 5, 10, 20],  # More splitting options
-        'classifier__min_samples_leaf': [1, 2, 4, 8],  # More leaf size options
-        'classifier__max_features': ['sqrt', 'log2', None, 0.7, 0.8],  # Added fraction options
-        'classifier__class_weight': ['balanced', 'balanced_subsample', None],
-        'classifier__bootstrap': [True, False],  # Test both with and without bootstrap
-        'classifier__criterion': ['gini', 'entropy', 'log_loss'],  # Test different split criteria
-        'classifier__max_leaf_nodes': [None, 50, 100, 200],  # Control tree size
-        'classifier__min_weight_fraction_leaf': [0.0, 0.1, 0.2]  # Control leaf importance
+        'classifier__n_estimators': [100, 300, 500],  # Fewer tree count options
+        'classifier__max_depth': [10, 30, None],  # Fewer depth options
+        'classifier__min_samples_split': [2, 10],  # Fewer split options
+        'classifier__min_samples_leaf': [1, 4],  # Fewer leaf options
+        'classifier__max_features': ['sqrt', 'log2'],  # Only most common feature selection methods
+        'classifier__class_weight': ['balanced', None],  # Basic class weight options
+        'classifier__criterion': ['gini', 'entropy']  # Main split criteria
     }
 
     # Create GridSearchCV object
