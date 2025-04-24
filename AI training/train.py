@@ -222,21 +222,17 @@ def train_model_NN(x, y, numeric_features, categorical_features):
     if len(unique_classes) != 2:
         raise ValueError(f"Expected binary classification (2 classes), but got {len(unique_classes)} classes")
 
-    # Enhanced param_grid with more comprehensive architecture search
+    # Simplified param_grid for faster training
     param_grid = {
         'classifier__hidden_layer_sizes': [
-            (64,), (128,), (256,), (512,),  # Single layer networks
-            (128, 64), (256, 128), (512, 256), (1024, 512),  # Two layer networks
-            (256, 128, 64), (512, 256, 128), (1024, 512, 256),  # Three layer networks
-            (512, 256, 128, 64), (1024, 512, 256, 128)  # Four layer networks
+            (64,), (128,),  # Single layer networks
+            (128, 64), (256, 128)  # Two layer networks
         ],
-        'classifier__alpha': [1e-6, 1e-5, 1e-4, 1e-3, 1e-2],  # More granular regularization
-        'classifier__learning_rate_init': [0.0001, 0.001, 0.01],  # More learning rate options
-        'classifier__batch_size': [32, 64, 128, 256],  # More batch size options
-        'classifier__activation': ['relu', 'tanh'],  # Test different activation functions
-        'classifier__learning_rate': ['adaptive', 'constant'],  # Test both learning rate schedules
-        'classifier__momentum': [0.8, 0.9, 0.95],  # Add momentum parameters
-        'classifier__nesterovs_momentum': [True, False]  # Test with and without Nesterov momentum
+        'classifier__alpha': [1e-4, 1e-3],  # Regularization
+        'classifier__learning_rate_init': [0.001, 0.01],  # Learning rate
+        'classifier__batch_size': [64, 128],  # Batch size
+        'classifier__activation': ['relu'],  # Most common activation function
+        'classifier__learning_rate': ['adaptive']  # Adaptive learning rate
     }
 
     # Create GridSearchCV object
