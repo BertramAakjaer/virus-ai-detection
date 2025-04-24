@@ -101,15 +101,22 @@ def setup_data(data):
 
 def train_model_SVM(x, y, numeric_features, categorical_features):
     # Create preprocessing steps
-    numeric_transformer = StandardScaler()
-    categorical_transformer = OneHotEncoder()
+    numeric_transformer = Pipeline([
+        ('scaler', StandardScaler())
+    ])
+    
+    categorical_transformer = Pipeline([
+        ('encoder', OneHotEncoder(sparse_output=False, handle_unknown='ignore'))
+    ])
 
     # Combine preprocessing steps
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numeric_features),
             ('cat', categorical_transformer, categorical_features)
-        ])
+        ],
+        remainder='drop'
+    )
 
     # Define the pipeline with probability=True
     pipeline = Pipeline([
@@ -117,13 +124,35 @@ def train_model_SVM(x, y, numeric_features, categorical_features):
         ('classifier', SVC(random_state=RANDOM_STATE, probability=True))
     ])
 
-    # Updated param_grid with more strategic values
+    # Ensure numeric dtypes for features
+    for col in numeric_features:
+        if col in x.columns:
+            x[col] = pd.to_numeric(x[col], errors='coerce')
+    
+    # Convert object columns to strings for categorical features
+    for col in categorical_features:
+        if col in x.columns:
+            x[col] = x[col].astype(str)
+
+    # Ensure binary classification labels
+    y = y.astype(np.int32)
+    
+    # Verify unique classes
+    unique_classes = np.unique(y)
+    print(f"Unique classes in dataset: {unique_classes}")
+    
+    if len(unique_classes) != 2:
+        raise ValueError(f"Expected binary classification (2 classes), but got {len(unique_classes)} classes")
+
+    # Enhanced param_grid with more comprehensive search
     param_grid = {
-        'classifier__C': [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],  # Wider range with logarithmic scale
-        'classifier__kernel': ['rbf', 'linear'],  # Added linear as it can work well for high-dimensional data
-        'classifier__gamma': ['scale', 'auto', 0.0001, 0.001, 0.01, 0.1, 1.0],  # More granular gamma values
+        'classifier__C': [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],  # Wider range for regularization
+        'classifier__kernel': ['rbf', 'linear', 'poly', 'sigmoid'],  # Added polynomial and sigmoid kernels
+        'classifier__gamma': ['scale', 'auto'] + [2**i for i in range(-15, 4)],  # More granular gamma values
+        'classifier__degree': [2, 3, 4],  # Polynomial degrees (only affects poly kernel)
         'classifier__class_weight': ['balanced', None],
-        'classifier__shrinking': [True]  # Simplified as this rarely impacts performance significantly
+        'classifier__coef0': [0.0, 0.1, 0.5, 1.0],  # Important for polynomial and sigmoid kernels
+        'classifier__shrinking': [True, False]  # Test impact of shrinking heuristic
     }
 
     # Create GridSearchCV object
@@ -133,7 +162,8 @@ def train_model_SVM(x, y, numeric_features, categorical_features):
         cv=5,
         scoring='accuracy',
         n_jobs=-1,
-        verbose=10
+        verbose=10,
+        error_score='raise'
     )
 
     print("Starting grid search...")
@@ -144,8 +174,13 @@ def train_model_SVM(x, y, numeric_features, categorical_features):
 
 def train_model_NN(x, y, numeric_features, categorical_features):
     # Create preprocessing steps
-    numeric_transformer = StandardScaler()
-    categorical_transformer = OneHotEncoder(sparse_output=False)
+    numeric_transformer = Pipeline([
+        ('scaler', StandardScaler())
+    ])
+    
+    categorical_transformer = Pipeline([
+        ('encoder', OneHotEncoder(sparse_output=False, handle_unknown='ignore'))
+    ])
 
     # Combine preprocessing steps
     preprocessor = ColumnTransformer(
@@ -162,16 +197,25 @@ def train_model_NN(x, y, numeric_features, categorical_features):
         ('classifier', MLPClassifier(
             random_state=RANDOM_STATE,
             max_iter=10000,
-            validation_fraction=0.2,  # Increased validation fraction
+            validation_fraction=0.2,
             solver='adam',
             early_stopping=True,
             activation='relu',
-            n_iter_no_change=10  # Added patience parameter
+            n_iter_no_change=10
         ))
     ])
 
+    # Ensure numeric dtypes for features
+    for col in numeric_features:
+        if col in x.columns:
+            x[col] = pd.to_numeric(x[col], errors='coerce')
+    
+    # Convert object columns to strings for categorical features
+    for col in categorical_features:
+        if col in x.columns:
+            x[col] = x[col].astype(str)
+
     # Ensure binary classification labels
-    x = x.astype(np.float32)
     y = y.astype(np.int32)
     
     # Verify unique classes
@@ -181,18 +225,21 @@ def train_model_NN(x, y, numeric_features, categorical_features):
     if len(unique_classes) != 2:
         raise ValueError(f"Expected binary classification (2 classes), but got {len(unique_classes)} classes")
 
-    # Updated param_grid with more efficient architecture search
+    # Enhanced param_grid with more comprehensive architecture search
     param_grid = {
         'classifier__hidden_layer_sizes': [
-            (64,), (128,), (256,),  # Single layer networks
-            (128, 64), (256, 128), (512, 256),  # Two layer networks
-            (256, 128, 64), (512, 256, 128),  # Three layer networks
-            (512, 256, 128, 64)  # Deep network
+            (64,), (128,), (256,), (512,),  # Single layer networks
+            (128, 64), (256, 128), (512, 256), (1024, 512),  # Two layer networks
+            (256, 128, 64), (512, 256, 128), (1024, 512, 256),  # Three layer networks
+            (512, 256, 128, 64), (1024, 512, 256, 128)  # Four layer networks
         ],
-        'classifier__alpha': [1e-5, 1e-4, 1e-3],  # Regularization strength
-        'classifier__learning_rate_init': [0.0001, 0.001, 0.01],  # Learning rate
-        'classifier__batch_size': [32, 64, 128, 256],  # Batch sizes
-        'classifier__learning_rate': ['adaptive']  # Simplified to most reliable option
+        'classifier__alpha': [1e-6, 1e-5, 1e-4, 1e-3, 1e-2],  # More granular regularization
+        'classifier__learning_rate_init': [0.0001, 0.001, 0.01],  # More learning rate options
+        'classifier__batch_size': [32, 64, 128, 256],  # More batch size options
+        'classifier__activation': ['relu', 'tanh'],  # Test different activation functions
+        'classifier__learning_rate': ['adaptive', 'constant'],  # Test both learning rate schedules
+        'classifier__momentum': [0.8, 0.9, 0.95],  # Add momentum parameters
+        'classifier__nesterovs_momentum': [True, False]  # Test with and without Nesterov momentum
     }
 
     # Create GridSearchCV object
@@ -214,15 +261,22 @@ def train_model_NN(x, y, numeric_features, categorical_features):
 
 def train_model_RF(x, y, numeric_features, categorical_features):
     # Create preprocessing steps
-    numeric_transformer = StandardScaler()
-    categorical_transformer = OneHotEncoder()
+    numeric_transformer = Pipeline([
+        ('scaler', StandardScaler())
+    ])
+    
+    categorical_transformer = Pipeline([
+        ('encoder', OneHotEncoder(sparse_output=False, handle_unknown='ignore'))
+    ])
 
     # Combine preprocessing steps
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numeric_features),
             ('cat', categorical_transformer, categorical_features)
-        ])
+        ],
+        remainder='drop'
+    )
 
     # Define the pipeline
     pipeline = Pipeline([
@@ -230,15 +284,38 @@ def train_model_RF(x, y, numeric_features, categorical_features):
         ('classifier', RandomForestClassifier(random_state=RANDOM_STATE))
     ])
 
-    # Updated param_grid with more comprehensive parameter search
+    # Ensure numeric dtypes for features
+    for col in numeric_features:
+        if col in x.columns:
+            x[col] = pd.to_numeric(x[col], errors='coerce')
+    
+    # Convert object columns to strings for categorical features
+    for col in categorical_features:
+        if col in x.columns:
+            x[col] = x[col].astype(str)
+
+    # Ensure binary classification labels
+    y = y.astype(np.int32)
+    
+    # Verify unique classes
+    unique_classes = np.unique(y)
+    print(f"Unique classes in dataset: {unique_classes}")
+    
+    if len(unique_classes) != 2:
+        raise ValueError(f"Expected binary classification (2 classes), but got {len(unique_classes)} classes")
+
+    # Enhanced param_grid with more comprehensive parameter search
     param_grid = {
-        'classifier__n_estimators': [100, 200, 500],  # Increased number of trees
-        'classifier__max_depth': [None, 20, 50, 100],  # Added deeper options
-        'classifier__min_samples_split': [2, 5, 10],
-        'classifier__min_samples_leaf': [1, 2, 4],
-        'classifier__max_features': ['sqrt', 'log2', None],  # Added feature selection options
-        'classifier__class_weight': ['balanced', 'balanced_subsample', None],  # Added class weight options
-        'classifier__bootstrap': [True]  # Simplified as False rarely improves performance
+        'classifier__n_estimators': [100, 200, 300, 500, 1000],  # More options for number of trees
+        'classifier__max_depth': [None, 10, 20, 30, 50, 100],  # More granular depth options
+        'classifier__min_samples_split': [2, 5, 10, 20],  # More splitting options
+        'classifier__min_samples_leaf': [1, 2, 4, 8],  # More leaf size options
+        'classifier__max_features': ['sqrt', 'log2', None, 0.7, 0.8],  # Added fraction options
+        'classifier__class_weight': ['balanced', 'balanced_subsample', None],
+        'classifier__bootstrap': [True, False],  # Test both with and without bootstrap
+        'classifier__criterion': ['gini', 'entropy', 'log_loss'],  # Test different split criteria
+        'classifier__max_leaf_nodes': [None, 50, 100, 200],  # Control tree size
+        'classifier__min_weight_fraction_leaf': [0.0, 0.1, 0.2]  # Control leaf importance
     }
 
     # Create GridSearchCV object
@@ -248,7 +325,8 @@ def train_model_RF(x, y, numeric_features, categorical_features):
         cv=5,
         scoring='accuracy',
         n_jobs=-1,
-        verbose=10
+        verbose=10,
+        error_score='raise'
     )
 
     print("Starting grid search...")
