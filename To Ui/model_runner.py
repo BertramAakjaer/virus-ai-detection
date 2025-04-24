@@ -1,14 +1,12 @@
 import joblib
 import pandas as pd
-import ast
 import os
-import tkinter as tk
-from tkinter import filedialog
-from sklearn.metrics import accuracy_score
-import numpy as np
-import pefile  # Added import
+import pefile
 
 import extract_to_load as etl
+
+MODEL = None
+COLUMNS = None
 
 
 def load_model(model_dir):
@@ -79,57 +77,64 @@ def extract_all_data(data_path):
     return data_dict
 
 
-if __name__ == "__main__":
-    # Load model
-    print("-\t initializing tkinter\t-")
-    root = tk.Tk()
-    root.withdraw()  # Hide the root window
-    # model_dir = filedialog.askdirectory(title="Select Model Directory")
-    
-    print("-\t initializing model\t-")
-    model_dir = r"C:\Users\bertr\OneDrive - NEXT Uddannelse København\Skrivebord\virus-ai-detection\AI training\[SVM] trained_models(2025-04-24 09-20-49)"
-    if not model_dir:
-        print("No directory selected. Exiting.")
-        exit(1)
-    
-    model, columns = load_model(model_dir)
-    
-    # Load new data
-    data_path = filedialog.askopenfilename(title="Select Exe File", filetypes=[("Executable files", "*.exe;*.exev;*.exeh;*.exet")])
-    if not data_path:
+
+
+
+def init_model(model_dir):
+    """Initialize the model and load the data"""
+    try:
+        global MODEL, COLUMNS
+        
+        if not os.path.exists(model_dir):
+            return None
+
+        
+        model, columns = load_model(model_dir)
+        
+        MODEL = model
+        COLUMNS = columns
+        
+        return True
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        return False
+
+
+def run_model(file_path):
+    """Run the model on the selected data file"""
+    if not file_path:
         print("No file selected. Exiting.")
         exit(1)
     
-    active_data = extract_all_data(data_path)
+    active_data = extract_all_data(file_path)
 
     if active_data is None:  # Check if extraction failed
         print("Failed to extract data from the file. Exiting.")
         exit(1)
-    
-    print(f"Extracted data: {active_data}")
-    
+        
     # Initialize row_data with default values (0) for all expected columns
-    row_data = {col: 0 for col in columns}
+    row_data = {col: 0 for col in COLUMNS}
     
     # Update row_data with values from active_data if the column exists
     for col, value in active_data.items():
         if col in row_data:
             row_data[col] = value
-            print(f"Column '{col}' found in data: {value}")  # Optional: keep print statement if needed
 
     # Create DataFrame from the single row dictionary
-    data_from_file = pd.DataFrame([row_data], columns=columns)
+    data_from_file = pd.DataFrame([row_data], columns=COLUMNS)
     
     # Make prediction using the first row
-    prediction = model.predict(data_from_file.iloc[0:1])
+    prediction = MODEL.predict(data_from_file.iloc[0:1])
 
-    probability = model.predict_proba(data_from_file.iloc[0:1])
+    probability = MODEL.predict_proba(data_from_file.iloc[0:1])
     
     prob_procent = 100 * probability[0][0]
 
-    # print(prediction)
-    # print(probability)
-    print("\n")
+
     
-    print("\nPrediction:", "Malware" if prediction[0] == 1 else "Clean")
-    print("Probability: {:.2f} %".format(prob_procent if prediction[0] == 0 else 100 - prob_procent))
+    is_malware = prediction[0] == 1
+    certainty = prob_procent if prediction[0] == 0 else 100 - prob_procent
+    
+    malware_certainty = 100 - prob_procent
+    
+    return is_malware, certainty, malware_certainty

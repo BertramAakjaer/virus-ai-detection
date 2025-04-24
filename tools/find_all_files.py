@@ -19,9 +19,9 @@ def find_files_by_extension(source_dir, target_dir, extensions):
             print(f"Error moving '{file_path}': {e}")
 
 if __name__ == "__main__":
-    source_dir = r"D:\Data\Rubber\theZoo-master\malware\Binaries"
-    target_dir = r"D:\Data\[5] Virusses Zoo"
-    extensions = ['.zip', '.tar', '.gz', '.bz2', '.xz', '.7z', '.rar']
+    source_dir = r"D:\Data\Rubber"
+    target_dir = r"D:\Data\temp"
+    extensions = ['.zip', '.exe', '.gz', '.bz2', '.xz', '.7z', '.rar']
 
     find_files_by_extension(source_dir, target_dir, extensions)
     

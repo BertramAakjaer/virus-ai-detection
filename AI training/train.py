@@ -16,7 +16,7 @@ import numpy as np
 from datetime import datetime
 
 
-TEST_SIZE = 0.01  # Proportion of data to use for testing
+#TEST_SIZE = 0.01  # Proportion of data to use for testing
 RANDOM_STATE = 60  # Seed for reproducibility
 
 
@@ -133,7 +133,7 @@ def train_model_SVM(x, y, numeric_features, categorical_features):
         cv=5,
         scoring='accuracy',
         n_jobs=-1,
-        verbose=2
+        verbose=10
     )
 
     # Fit the grid search
@@ -227,10 +227,11 @@ def predict(model, x):
 
 # Saving model for later use
 
-def save_model(model, X):
+def save_model(model, X, model_type):
+    model_type = model_type.upper()
     # Create a folder named 'trained_models' if it doesn't exist
     timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-    models_dir = f"trained_models({timestamp})"
+    models_dir = f"[{model_type}] trained_models({timestamp})"
     os.makedirs(models_dir, exist_ok=True)
 
     # Save the complete model pipeline and additional data
@@ -274,19 +275,21 @@ if __name__ == "__main__":
     print("Setting up data for training...")
     x, y, numeric_features, categorical_features = setup_data(data)
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=TEST_SIZE, random_state=RANDOM_STATE)
+    #x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=TEST_SIZE, random_state=RANDOM_STATE)
 
     print(f"Dataset memory usage: {data.memory_usage().sum() / 1024**2:.2f} MB")
     print(f"Number of features: {len(x.columns)}")
     print(f"Number of samples: {len(x)}")
 
     print("Training model... \n")
-    model = train_model_NN(x_train, y_train, numeric_features, categorical_features)
-    
-
-    print("Model trained. Evaluating...")
-    predictions = predict(model, x_test)
-    print("Accuracy:", accuracy_score(y_test, predictions))
+    MODEL_TYPE = input("Select model type (SVM/NN): ").strip().lower()
+    if MODEL_TYPE == 'svm':
+        model = train_model_SVM(x, y, numeric_features, categorical_features)
+    elif MODEL_TYPE == 'nn':
+        model = train_model_NN(x, y, numeric_features, categorical_features)
+    else:
+        print("Invalid model type. Exiting.")
+        exit()
     
 
     input = input("Save the model? (y/n): ")
@@ -294,4 +297,4 @@ if __name__ == "__main__":
         print("Model not saved.")
         exit()
 
-    save_model(model, x)
+    save_model(model, x, MODEL_TYPE)
