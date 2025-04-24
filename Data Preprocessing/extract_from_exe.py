@@ -45,8 +45,17 @@ def get_EntropyCalculation_and_sections(pe):
                 p_x = count / len(data)
                 entropy -= p_x * math.log2(p_x)
 
-        entropy_dict[section.Name.decode().strip()] = entropy
-    
+        # Try different encodings and fallback to hex representation if decoding fails
+        try:
+            section_name = section.Name.decode('utf-8').strip()
+        except UnicodeDecodeError:
+            try:
+                section_name = section.Name.decode('ascii', errors='replace').strip()
+            except UnicodeDecodeError:
+                # Fallback to hex representation
+                section_name = section.Name.hex().strip()
+        
+        entropy_dict[section_name] = entropy
     
     if len(entropy_dict) == 0:
         print("No entropy found")

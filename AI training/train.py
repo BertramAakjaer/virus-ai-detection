@@ -9,6 +9,7 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 
 from sklearn.model_selection import GridSearchCV, train_test_split
 import joblib
@@ -116,14 +117,13 @@ def train_model_SVM(x, y, numeric_features, categorical_features):
         ('classifier', SVC(random_state=RANDOM_STATE, probability=True))
     ])
 
-    # Simplify param_grid to remove probability parameter since it must be True
+    # Updated param_grid with more strategic values
     param_grid = {
-        'classifier__C': [0.01, 0.03, 0.09, 0.27, 1, 3, 9, 27, 81, 243, 729, 2187, 6561],
-        'classifier__kernel': ['rbf'], # 'linear', 'poly', 'sigmoid'],
-        'classifier__degree': [1, 2, 3, 4, 6],
-        'classifier__shrinking': [True, False],
-        'classifier__class_weight': [None, 'balanced'],
-        'classifier__gamma': ['scale', 'auto', 0.1]
+        'classifier__C': [0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],  # Wider range with logarithmic scale
+        'classifier__kernel': ['rbf', 'linear'],  # Added linear as it can work well for high-dimensional data
+        'classifier__gamma': ['scale', 'auto', 0.0001, 0.001, 0.01, 0.1, 1.0],  # More granular gamma values
+        'classifier__class_weight': ['balanced', None],
+        'classifier__shrinking': [True]  # Simplified as this rarely impacts performance significantly
     }
 
     # Create GridSearchCV object
@@ -136,14 +136,10 @@ def train_model_SVM(x, y, numeric_features, categorical_features):
         verbose=10
     )
 
-    # Fit the grid search
     print("Starting grid search...")
     grid_search.fit(x, y)
-
-    # Print best parameters
     print("\nBest parameters:", grid_search.best_params_)
     print("Best cross-validation score:", grid_search.best_score_)
-
     return grid_search.best_estimator_
 
 def train_model_NN(x, y, numeric_features, categorical_features):
@@ -166,10 +162,11 @@ def train_model_NN(x, y, numeric_features, categorical_features):
         ('classifier', MLPClassifier(
             random_state=RANDOM_STATE,
             max_iter=10000,
-            validation_fraction=0.1,
-            solver='adam',  # Better for binary classification
+            validation_fraction=0.2,  # Increased validation fraction
+            solver='adam',
             early_stopping=True,
             activation='relu',
+            n_iter_no_change=10  # Added patience parameter
         ))
     ])
 
@@ -184,18 +181,18 @@ def train_model_NN(x, y, numeric_features, categorical_features):
     if len(unique_classes) != 2:
         raise ValueError(f"Expected binary classification (2 classes), but got {len(unique_classes)} classes")
 
+    # Updated param_grid with more efficient architecture search
     param_grid = {
         'classifier__hidden_layer_sizes': [
-            (8,), (16,), (32,), (64,), (128,), (256,), 
-            (32, 16), (64, 32), (128, 64), (256, 128),
-            (32, 16, 8), (64, 32, 16), (128, 64, 32), (256, 128, 64),
-            (32, 16, 8, 4), (64, 32, 16, 8)
-
+            (64,), (128,), (256,),  # Single layer networks
+            (128, 64), (256, 128), (512, 256),  # Two layer networks
+            (256, 128, 64), (512, 256, 128),  # Three layer networks
+            (512, 256, 128, 64)  # Deep network
         ],
-        'classifier__alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1],
-        'classifier__learning_rate_init': [0.0001, 0.001, 0.01, 0.1],
-        'classifier__batch_size': [4, 8, 16, 32, 64, 128, 256, 500],
-        'classifier__learning_rate': ['constant', 'adaptive', 'invscaling'],
+        'classifier__alpha': [1e-5, 1e-4, 1e-3],  # Regularization strength
+        'classifier__learning_rate_init': [0.0001, 0.001, 0.01],  # Learning rate
+        'classifier__batch_size': [32, 64, 128, 256],  # Batch sizes
+        'classifier__learning_rate': ['adaptive']  # Simplified to most reliable option
     }
 
     # Create GridSearchCV object
@@ -207,6 +204,51 @@ def train_model_NN(x, y, numeric_features, categorical_features):
         n_jobs=-1,
         verbose=10,
         error_score='raise'
+    )
+
+    print("Starting grid search...")
+    grid_search.fit(x, y)
+    print("\nBest parameters:", grid_search.best_params_)
+    print("Best cross-validation score:", grid_search.best_score_)
+    return grid_search.best_estimator_
+
+def train_model_RF(x, y, numeric_features, categorical_features):
+    # Create preprocessing steps
+    numeric_transformer = StandardScaler()
+    categorical_transformer = OneHotEncoder()
+
+    # Combine preprocessing steps
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features),
+            ('cat', categorical_transformer, categorical_features)
+        ])
+
+    # Define the pipeline
+    pipeline = Pipeline([
+        ('preprocessor', preprocessor),
+        ('classifier', RandomForestClassifier(random_state=RANDOM_STATE))
+    ])
+
+    # Updated param_grid with more comprehensive parameter search
+    param_grid = {
+        'classifier__n_estimators': [100, 200, 500],  # Increased number of trees
+        'classifier__max_depth': [None, 20, 50, 100],  # Added deeper options
+        'classifier__min_samples_split': [2, 5, 10],
+        'classifier__min_samples_leaf': [1, 2, 4],
+        'classifier__max_features': ['sqrt', 'log2', None],  # Added feature selection options
+        'classifier__class_weight': ['balanced', 'balanced_subsample', None],  # Added class weight options
+        'classifier__bootstrap': [True]  # Simplified as False rarely improves performance
+    }
+
+    # Create GridSearchCV object
+    grid_search = GridSearchCV(
+        pipeline,
+        param_grid,
+        cv=5,
+        scoring='accuracy',
+        n_jobs=-1,
+        verbose=10
     )
 
     print("Starting grid search...")
@@ -282,11 +324,13 @@ if __name__ == "__main__":
     print(f"Number of samples: {len(x)}")
 
     print("Training model... \n")
-    MODEL_TYPE = input("Select model type (SVM/NN): ").strip().lower()
+    MODEL_TYPE = input("Select model type (SVM/NN/RF): ").strip().lower()
     if MODEL_TYPE == 'svm':
         model = train_model_SVM(x, y, numeric_features, categorical_features)
     elif MODEL_TYPE == 'nn':
         model = train_model_NN(x, y, numeric_features, categorical_features)
+    elif MODEL_TYPE == 'rf':
+        model = train_model_RF(x, y, numeric_features, categorical_features)
     else:
         print("Invalid model type. Exiting.")
         exit()

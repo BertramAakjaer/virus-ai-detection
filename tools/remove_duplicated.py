@@ -6,7 +6,7 @@ from tqdm import tqdm
 import time
 
 def remove_duplicate_files(folder_path):
-    """Removes duplicate files in a folder using SHA-256 hash."""
+    """Removes duplicate files in a folder using MD5 hash."""
 
     hashes = {}
     duplicates = []
@@ -17,7 +17,7 @@ def remove_duplicate_files(folder_path):
         file_path = os.path.join(folder_path, filename)
 
         with open(file_path, "rb") as f:
-            file_hash = hashlib.sha256(f.read()).hexdigest()
+            file_hash = hashlib.md5(f.read()).hexdigest()
 
         if file_hash in hashes:
             duplicates.append(file_path)

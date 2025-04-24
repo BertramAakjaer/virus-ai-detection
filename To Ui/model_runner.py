@@ -77,9 +77,6 @@ def extract_all_data(data_path):
     return data_dict
 
 
-
-
-
 def init_model(model_dir):
     """Initialize the model and load the data"""
     try:
@@ -88,7 +85,6 @@ def init_model(model_dir):
         if not os.path.exists(model_dir):
             return None
 
-        
         model, columns = load_model(model_dir)
         
         MODEL = model
@@ -125,16 +121,17 @@ def run_model(file_path):
     
     # Make prediction using the first row
     prediction = MODEL.predict(data_from_file.iloc[0:1])
-
     probability = MODEL.predict_proba(data_from_file.iloc[0:1])
     
-    prob_procent = 100 * probability[0][0]
-
-
+    # For consistency, all models return probabilities where:
+    # - index 0 is the probability of being clean (class 0)
+    # - index 1 is the probability of being malware (class 1)
+    prob_clean = probability[0][0]
     
     is_malware = prediction[0] == 1
-    certainty = prob_procent if prediction[0] == 0 else 100 - prob_procent
-    
-    malware_certainty = 100 - prob_procent
+    # If it's malware, return the malware probability as certainty
+    # If it's clean, return the clean probability as certainty
+    certainty = 100 * (1 - prob_clean if is_malware else prob_clean)
+    malware_certainty = 100 * (1 - prob_clean)
     
     return is_malware, certainty, malware_certainty

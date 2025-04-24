@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 from tqdm import tqdm
 
-EXTENTION = '.exev'
+EXTENTION = '.exeh'
 MAX_FILENAME_LENGTH = 255  # Maximum filename length (OS dependent)
 
 def change_file_extensions(folder_path):
