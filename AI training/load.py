@@ -128,14 +128,21 @@ if __name__ == "__main__":
     
     # Make prediction using the first row
     prediction = model.predict(data_from_file.iloc[0:1])
-
     probability = model.predict_proba(data_from_file.iloc[0:1])
     
-    prob_procent = 100 * probability[0][0]
-
-    # print(prediction)
-    # print(probability)
-    print("\n")
+    # For consistency, all models return probabilities where:
+    # - index 0 is the probability of being clean (class 0)
+    # - index 1 is the probability of being malware (class 1)
+    prob_clean = probability[0][0]
     
-    print("\nPrediction:", "Malware" if prediction[0] == 1 else "Clean")
-    print("Probability: {:.2f} %".format(prob_procent if prediction[0] == 0 else 100 - prob_procent))
+    is_malware = prediction[0] == 1
+    # If it's malware, return the malware probability as certainty
+    # If it's clean, return the clean probability as certainty
+    certainty = 100 * (1 - prob_clean if is_malware else prob_clean)
+    malware_certainty = 100 * (1 - prob_clean)
+    
+    
+    
+    print(f"Prediction: {'Malware' if is_malware else 'Clean'}")
+    print(f"Certainty: {certainty:.2f}%")
+    print(f"Malware Certainty: {malware_certainty:.2f}%")

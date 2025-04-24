@@ -119,6 +119,12 @@ def run_model(file_path):
     # Create DataFrame from the single row dictionary
     data_from_file = pd.DataFrame([row_data], columns=COLUMNS)
     
+    # Convert categorical columns to strings to match training data format
+    categorical_features = ['Subsystem']  # Add other categorical features if any
+    for col in categorical_features:
+        if col in data_from_file.columns:
+            data_from_file[col] = data_from_file[col].astype(str)
+    
     # Make prediction using the first row
     prediction = MODEL.predict(data_from_file.iloc[0:1])
     probability = MODEL.predict_proba(data_from_file.iloc[0:1])
