@@ -58,7 +58,10 @@ def get_Imported_DLLs(pe):
     if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
         for entry in pe.DIRECTORY_ENTRY_IMPORT:
             dll_name = entry.dll.decode()
-            imported_dlls[dll_name] = len(entry.imports)
+            imported_dlls[dll_name] = []
+            for imp in entry.imports:
+                if imp.name:
+                    imported_dlls[dll_name].append(imp.name.decode())
     
     if len(imported_dlls) == 0:
         print("No imported DLLs found")

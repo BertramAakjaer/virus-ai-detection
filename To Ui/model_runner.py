@@ -11,12 +11,18 @@ COLUMNS = None
 
 def load_model(model_dir):
     """Load all saved model components"""
-    model = joblib.load(os.path.join(model_dir, "model_pipeline.pkl"))
+    model_path = os.path.join(model_dir, "model_pipeline.pkl")
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Model file not found: {model_path}")
+    
+    model = joblib.load(model_path)
     
     # Load column names from CSV
     csv_path = os.path.join(model_dir, "template.csv")
-    if csv_path:
-        columns = pd.read_csv(csv_path, nrows=0).columns.tolist()
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(f"Template file not found: {csv_path}")
+        
+    columns = pd.read_csv(csv_path, nrows=0).columns.tolist()
     return model, columns
 
 
@@ -49,15 +55,15 @@ def extract_all_data(data_path):
     if subsystem is not None:
         data_dict['Subsystem'] = subsystem
 
-    # get all dlls and their counts
+    # get all dlls and their functions
     imported_dlls = etl.get_Imported_DLLs(pe)  # Pass pe object
     if imported_dlls is not None:
-        for dll, count in imported_dlls.items():
+        for dll, functions in imported_dlls.items():
             temp = str(dll)
             temp = temp.replace(".dll", " ")
             temp = temp.strip()
             a = "dll_" + temp + "_dll_count"
-            data_dict[a] = count
+            data_dict[a] = len(functions)  # Count the number of imported functions
 
     # get entropy of sections
     entropy_sections = etl.get_EntropyCalculation_and_sections(pe)  # Pass pe object
@@ -115,9 +121,14 @@ def run_model(file_path):
     for col, value in active_data.items():
         if col in row_data:
             row_data[col] = value
+        else:
+            print(f"Warning: Extracted feature '{col}' not found in model's expected features")
 
     # Create DataFrame from the single row dictionary
     data_from_file = pd.DataFrame([row_data], columns=COLUMNS)
+    
+    missing_features = set(COLUMNS) - set(active_data.keys())
+
     
     # Convert categorical columns to strings to match training data format
     categorical_features = ['Subsystem']  # Add other categorical features if any
@@ -133,6 +144,8 @@ def run_model(file_path):
     # - index 0 is the probability of being clean (class 0)
     # - index 1 is the probability of being malware (class 1)
     prob_clean = probability[0][0]
+    prob_malware = probability[0][1]
+
     
     is_malware = prediction[0] == 1
     # If it's malware, return the malware probability as certainty
