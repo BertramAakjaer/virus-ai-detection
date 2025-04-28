@@ -155,10 +155,10 @@ def train_model_SVM(x, y, numeric_features, categorical_features):
 
     # Simplified param_grid for faster training
     param_grid = {
-        'classifier__C': [0.1, 1.0, 10.0],  # Reduced regularization options
+        'classifier__C': [1.0],  # Reduced regularization options
         'classifier__kernel': ['rbf', 'linear'],  # Most common kernels
-        'classifier__gamma': ['scale', 'auto'],  # Basic gamma options
-        'classifier__class_weight': ['balanced', None]
+        'classifier__gamma': ['auto'],  # Basic gamma options
+        'classifier__class_weight': ['balanced']
     }
 
     # Create GridSearchCV object
