@@ -65,6 +65,8 @@ def setup_data(data):
     # Prepare input features and target variable
     X = data[numeric_features + categorical_features]
     
+    y__clean = data['Label'].copy()
+    
     # Convert text labels to binary values (0 for harmless, 1 for malware)
     y = (data['Label'] == 'malware').astype(int)
     
@@ -93,6 +95,13 @@ def setup_data(data):
 
     # Remove any duplicate columns
     X = X.loc[:, ~X.columns.duplicated()]
+    
+    
+    print("\nSaving processed data...")
+    # Save X and y to CSV files
+    X.to_csv('processed_features.csv', index=False)
+    pd.Series(y__clean, name='Label').to_csv('processed_labels.csv', index=False)
+    print(f"Saved processed data to processed_features.csv and processed_labels.csv")
     
     return X, y, numeric_features, categorical_features
 
