@@ -60,10 +60,10 @@ if __name__ == "__main__":
     #exe_files = find_exe_files(folder_path)
 
     # quick scan
-    exe_files = quick_scan()
+    # exe_files = quick_scan()
 
     # full scan
-    #exe_files = full_scan()
+    exe_files = full_scan()
 
 
 

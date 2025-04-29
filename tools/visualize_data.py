@@ -39,7 +39,7 @@ def visualize_excel_data(file_path, x_column, y_column):
 
 if __name__ == "__main__":
     file_path = r"C:\Users\bertr\Downloads\processed_features.xlsx"  # Example file path
-    x_column = 'dll_VCRUNTIME140_1D_dll_count'  # Example X-axis column
-    y_column = 'dll_MSVCR100_dll_count'  # Example Y-axis column  
+    x_column = 'dll_kernel32_dll_count'  # Example X-axis column
+    y_column = 'dll_comsvcs_dll_count'  # Example Y-axis column  
     
     visualize_excel_data(file_path, x_column, y_column)

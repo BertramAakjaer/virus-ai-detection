@@ -1,10 +1,10 @@
 import model_runner as lm
 
 if __name__ == "__main__":
-    model_dir = r'C:\Users\bertr\OneDrive - NEXT Uddannelse København\Skrivebord\virus-ai-detection\AI training\[SVM] trained_models(2025-04-24 09-20-49)'
+    model_dir = r"C:\Users\bertr\Downloads\drive-download-20250425T075911Z-001\Small Dataset (2,4 MB)\[SVM] trained_models(2025-04-24 20-09-03)"
     lm.init_model(model_dir)
     
-    file = r'D:\Data\[4] Harmless\Maple2024WindowsX64GYMUpgrade_da.exeh'
+    file = r"C:\Users\bertr\Downloads\keylogger.exe"
     is_malware, certainty, malware_certainty = lm.run_model(file)
     print(f"Is malware: {is_malware}, Certainty: {certainty}, Malware Certainty: {malware_certainty}")
     
